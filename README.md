@@ -1,1 +1,0 @@
-# developerITra-Hello, World!
