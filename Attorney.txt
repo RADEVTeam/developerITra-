@@ -29,7 +29,7 @@ Set t = CurrentDb.OpenRecordset("SELECT Name FROM Staff WHERE Active=true and at
 
 Do While Not t.EOF
     cnt = cnt + 1
-    Names(cnt) = t("Name") & ", Esq."
+    Names(cnt) = t("Name") 		'& ", Esq."    comment this out for testing   Mei 8/15/18
     t.MoveNext
 Loop
 t.Close
