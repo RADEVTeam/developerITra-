@@ -1,0 +1,194 @@
+Attribute VB_Name = "Attorney"
+Option Compare Database
+Option Explicit
+
+Public Function AssignmentNames(File As Long, Fmt As Integer) As String
+'
+' File: File number, or 0 for 'current' file
+' Fmt:  1 = comma separated list
+'       2 = comma separated list, except AND last name
+'       3 = one name per line
+'       4 = signature lines
+'
+Dim t As Recordset
+Dim Names(1 To 50) As String
+Dim SigPrefix(1 To 50) As String
+Dim cnt As Integer
+Dim i As Integer
+Dim ls_state As String
+
+cnt = 0
+If File = 0 Then File = Forms![case list]!FileNumber
+
+ls_state = Nz(DLookup("State", "FCDetails", "Filenumber=" & File & " and Current=true"))
+If (Len(ls_state) = 0) Then
+  MsgBox "Please fill in the foreclosure state before continuing.", vbExclamation
+  Exit Function
+End If
+Set t = CurrentDb.OpenRecordset("SELECT Name FROM Staff WHERE Active=true and attorney=true and Practice" & ls_state & "=true", dbOpenSnapshot)
+
+Do While Not t.EOF
+    cnt = cnt + 1
+    Names(cnt) = t("Name") & ", Esq."
+    t.MoveNext
+Loop
+t.Close
+
+Select Case Fmt
+    Case 1      ' comma separated list
+        For i = 1 To cnt
+            AssignmentNames = AssignmentNames & Names(i)
+            If i < cnt Then AssignmentNames = AssignmentNames & ", "
+        Next i
+    Case 2      ' comma separated list, except AND last name
+        For i = 1 To cnt
+            AssignmentNames = AssignmentNames & Names(i)
+            If i < cnt Then
+                If i < cnt - 1 Then
+                    AssignmentNames = AssignmentNames & ", "
+                Else
+                    AssignmentNames = AssignmentNames & " and "
+                End If
+            End If
+        Next i
+    Case 3      ' one name per line
+        For i = 1 To cnt
+            AssignmentNames = AssignmentNames & Names(i) & vbCrLf
+            
+        Next i
+    Case 4      ' signature lines
+        For i = 1 To cnt
+            AssignmentNames = AssignmentNames & "___________________________________" & vbNewLine
+            AssignmentNames = AssignmentNames & vbNewLine
+            AssignmentNames = AssignmentNames & Names(i)
+            AssignmentNames = AssignmentNames & vbNewLine & vbNewLine
+        Next i
+    Case Else
+        MsgBox "Invalid format in call to AssignmentNames", vbExclamation
+        AssignmentNames = ""
+End Select
+
+End Function
+
+Public Function GetDCattorneys() As String
+Dim rsStaff As Recordset
+'Set rsStaff = CurrentDb.OpenRecordset("SELECT Name FROM Staff WHERE DCselected=true ", dbOpenSnapshot)
+'If rsStaff.EOF Then
+'    'GetDCattorneys = ""
+'    rsStaff.Close
+'    Set rsStaff = CurrentDb.OpenRecordset("SELECT Name FROM Staff WHERE id in(135,400,788)", dbOpenSnapshot)
+'End If
+'    Do While Not rsStaff.EOF
+'        GetDCattorneys = GetDCattorneys & rsStaff!Name & ", "
+'        rsStaff.MoveNext
+'    Loop
+'    GetDCattorneys = Left$(GetDCattorneys, Len(GetDCattorneys) - 2)
+'rsStaff.Close
+'Set rsStaff = Nothing
+
+Set rsStaff = CurrentDb.OpenRecordset("SELECT Name FROM DC_CompSelectedAtty WHERE Filenumber = " & Forms!Foreclosuredetails!FileNumber, dbOpenSnapshot)
+If Not rsStaff.EOF Then
+    Do While Not rsStaff.EOF
+        GetDCattorneys = GetDCattorneys & rsStaff!Name & ", "
+        rsStaff.MoveNext
+    Loop
+    GetDCattorneys = Left$(GetDCattorneys, Len(GetDCattorneys) - 2)
+End If
+
+rsStaff.Close
+Set rsStaff = Nothing
+
+
+End Function
+
+Public Function GetDCattorneyLine() As String
+Dim rsStaff As Recordset
+'Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,DCBar FROM Staff WHERE DCselected=true ", dbOpenSnapshot)
+'If rsStaff.EOF Then
+'    'GetDCattorneys = ""
+'    rsStaff.Close
+'    Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,DCBar FROM Staff WHERE id in(135,400,788)", dbOpenSnapshot)
+'End If
+'    Do While Not rsStaff.EOF
+'        GetDCattorneyLine = GetDCattorneyLine & rsStaff!Name & " (D.C. Bar # " & rsStaff!DCBar & ")" & vbNewLine
+'        rsStaff.MoveNext
+'    Loop
+'    GetDCattorneyLine = Left$(GetDCattorneyLine, Len(GetDCattorneyLine) - 2)
+'rsStaff.Close
+'Set rsStaff = Nothing
+
+Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,DCBar FROM DC_CompSelectedAtty WHERE Filenumber = " & Forms!Foreclosuredetails!FileNumber, dbOpenSnapshot)
+If Not rsStaff.EOF Then
+    Do While Not rsStaff.EOF
+        GetDCattorneyLine = GetDCattorneyLine & rsStaff!Name & " (D.C. Bar # " & rsStaff!DCBar & ")" & vbNewLine
+        rsStaff.MoveNext
+    Loop
+    GetDCattorneyLine = Left$(GetDCattorneyLine, Len(GetDCattorneyLine) - 2)
+End If
+Set rsStaff = Nothing
+
+End Function
+Public Function GetDCattorneyLineEsq() As String
+Dim rsStaff As Recordset
+Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,DCBar FROM Staff WHERE DCselected=true ", dbOpenSnapshot)
+If rsStaff.EOF Then
+    'GetDCattorneys = ""
+    rsStaff.Close
+    Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,DCBar FROM Staff WHERE id in(135,400,788)", dbOpenSnapshot)
+End If
+    Do While Not rsStaff.EOF
+        GetDCattorneyLineEsq = GetDCattorneyLineEsq & rsStaff!Name & ", Esq. (via Case File Xpress)" & vbNewLine
+        rsStaff.MoveNext
+    Loop
+    GetDCattorneyLineEsq = Left$(GetDCattorneyLineEsq, Len(GetDCattorneyLineEsq) - 2)
+rsStaff.Close
+Set rsStaff = Nothing
+End Function
+
+                                        
+Public Function GetDCattorneyEmail() As String
+Dim rsStaff As Recordset
+'Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,Email FROM Staff WHERE DCselected=true ", dbOpenSnapshot)
+'If rsStaff.EOF Then
+'    'GetDCattorneys = ""
+'    rsStaff.Close
+'    Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,Email FROM Staff WHERE id in(135,400,788)", dbOpenSnapshot)
+'End If
+'    Do While Not rsStaff.EOF
+'        GetDCattorneyEmail = GetDCattorneyEmail & rsStaff!EMail & vbNewLine & "              "
+'        rsStaff.MoveNext
+'    Loop
+'    GetDCattorneyEmail = Left$(GetDCattorneyEmail, Len(GetDCattorneyEmail) - 2)
+'rsStaff.Close
+'Set rsStaff = Nothing
+
+Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,Email FROM DC_CompSelectedAtty WHERE Filenumber = " & Forms!Foreclosuredetails!FileNumber, dbOpenSnapshot)
+If Not rsStaff.EOF Then
+    Do While Not rsStaff.EOF
+        GetDCattorneyEmail = GetDCattorneyEmail & rsStaff!EMail & vbNewLine & "              "
+        rsStaff.MoveNext
+    Loop
+    GetDCattorneyEmail = Left$(GetDCattorneyEmail, Len(GetDCattorneyEmail) - 2)
+End If
+
+rsStaff.Close
+Set rsStaff = Nothing
+
+End Function
+                                        
+Public Function GetDCattorneyOneLine() As String
+Dim rsStaff As Recordset
+Set rsStaff = CurrentDb.OpenRecordset("SELECT Name, DC_CompSelectedAtty.FileNumber FROM DC_CompSelectedAtty INNER JOIN Staff ON DC_CompSelectedAtty.AttyID = Staff.ID WHERE Staff.Active = true and DC_CompSelectedAtty.FileNumber=" & [Forms]![case list]![FileNumber], dbOpenSnapshot)
+If rsStaff.EOF Then
+    'GetDCattorneys = ""
+    rsStaff.Close
+'    Set rsStaff = CurrentDb.OpenRecordset("SELECT Name,DCBar FROM Staff WHERE id in(135,449,788)", dbOpenSnapshot)
+End If
+    Do While Not rsStaff.EOF
+        GetDCattorneyOneLine = GetDCattorneyOneLine & rsStaff!Name & ", "
+        rsStaff.MoveNext
+    Loop
+    GetDCattorneyOneLine = Left$(GetDCattorneyOneLine, Len(GetDCattorneyOneLine) - 2)
+rsStaff.Close
+Set rsStaff = Nothing
+End Function
